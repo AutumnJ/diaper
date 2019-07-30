@@ -12,7 +12,6 @@ gem "bootstrap-sass"
 gem "bugsnag"
 gem "chartkick"
 gem "cocoon"
-gem "coffee-rails"
 gem "devise"
 gem "devise_invitable"
 gem "dotenv-rails"
@@ -46,6 +45,7 @@ gem "toastr-rails"
 gem "actiontext", github: "kobaltz/actiontext", branch: "archive", require: "action_text"
 gem "image_processing"
 gem "webpacker", "~> 3.5"
+gem 'sidekiq-scheduler'
 
 group :development, :test do
   gem "awesome_print"
@@ -92,4 +92,9 @@ group :test do
 end
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
-gem "tzinfo-data", "~> 1.2", platforms: %i(mingw mswin x64_mingw jruby)
+
+# This 'if' may seem redundant but for some reason it is necessary to suppress
+# a warning on non (Windows or JRuby) platforms.
+if %w(mingw mswin x64_mingw jruby).include?(RUBY_PLATFORM)
+  gem "tzinfo-data", "~> 1.2", platforms: %i(mingw mswin x64_mingw jruby)
+end

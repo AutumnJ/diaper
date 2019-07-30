@@ -12,15 +12,19 @@
 #
 
 class LineItem < ApplicationRecord
+  MAX_INT = 2**31
+  MIN_INT = -2**31
+
   belongs_to :itemizable, polymorphic: true, inverse_of: :line_items, optional: false
   belongs_to :item
 
   validates :item_id, presence: true
-  validates :quantity, numericality: { other_than: 0, only_integer: true }
+  validates :quantity, numericality: { only_integer: true, less_than: MAX_INT, greater_than: MIN_INT }
   scope :active, -> { joins(:item).where(items: { active: true }) }
 
+  # FIXME: This is a temporary hack to stop a 500 from showing up. We need to remove the default_scope from Item
   def value_per_line_item
-    item.value_in_cents * quantity
+    (item&.value_in_cents || 0) * quantity
   end
 
   def has_packages

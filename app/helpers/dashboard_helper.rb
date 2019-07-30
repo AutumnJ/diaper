@@ -1,48 +1,5 @@
 # Encapsulates methods used on the Dashboard that need some business logic
 module DashboardHelper
-  def display_interval
-    selected_interval.humanize.downcase
-  end
-
-  def filter_intervals
-    [
-      %w(Today today),
-      %w(Yesterday yesterday),
-      ["This Week", "this_week"],
-      ["This Month", "this_month"],
-      ["Last Month", "last_month"],
-      ["This Year", "this_year"],
-      ["Last Year", "last_year"],
-      ["All Time", "all_time"],
-    ]
-  end
-
-  def selected_interval
-    params.dig(:dashboard_filter, :interval) || "this_year"
-  end
-
-  def selected_range
-    now = Time.zone.now
-    case selected_interval
-    when "today"
-      now.beginning_of_day..now
-    when "yesterday"
-      (now - 1.day).beginning_of_day..(now - 1.day).end_of_day
-    when "this_week"
-      now.beginning_of_week..now
-    when "this_month"
-      now.beginning_of_month..now
-    when "last_month"
-      (now - 1.month).beginning_of_month..(now - 1.month).end_of_month
-    when "this_year"
-      now.beginning_of_year..now
-    when "last_year"
-      (now - 1.year).beginning_of_year..(now - 1.year).end_of_year
-    else
-      Time.zone.local(2017, 1, 1, 0, 0, 0)..now
-    end
-  end
-
   def received_distributed_data(range = selected_range)
     {
       "Received donations" => total_received_donations_unformatted(range),
@@ -75,6 +32,10 @@ module DashboardHelper
     number_with_delimiter total_distributed_unformatted(range)
   end
 
+  def future_distributed
+    number_with_delimiter future_distributed_unformatted
+  end
+
   private
 
   def total_received_donations_unformatted(range = selected_range)
@@ -91,5 +52,9 @@ module DashboardHelper
 
   def total_distributed_unformatted(range = selected_range)
     LineItem.active.where(itemizable: current_organization.distributions.during(range)).sum(:quantity)
+  end
+
+  def future_distributed_unformatted
+    LineItem.active.where(itemizable: current_organization.distributions.future).sum(:quantity)
   end
 end

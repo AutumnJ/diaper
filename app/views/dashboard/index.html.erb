@@ -47,11 +47,11 @@
 
 
       <div class="box-header with-border bg-gray">
-        <section id="filters">
+        <section id="filters" class="submit-on-change">
           <div class="box-body">
-              <%= simple_form_for :dashboard_filter, url: dashboard_path(current_organization), remote: true, method: :get do |f| %>
+              <%= simple_form_for :filters, url: dashboard_path(current_organization), remote: true, method: :get do |f| %>
                 <div class="form-group col-md-offset-10 col-md-2 col-sm-offset-6 col-sm-6 col-xs-12">
-                  <label for="interval">Date Range</label>
+                  <label for="interval">Filter By Date Range</label>
                   <%= f.select :interval, filter_intervals, { selected: selected_interval }, class: "form-control" %>
                 </div>
               <% end %>
@@ -73,6 +73,7 @@
             <div class="box-body text-center float-center">
               <%= new_button_to new_distribution_path, { text: "New Distribution" } %>
               <h3 class="text-center"><%= total_distributed %> items distributed <%= display_interval %></h3>
+              <h4 class="text-center">(<%= future_distributed %> items scheduled for future distribution)</h4>
               <div class="box-body">
                 <h4>Recent distributions</h4>
                 <%= render partial: "distribution", collection: @recent_distributions, as: :distribution %>
@@ -190,16 +191,27 @@
             <div class="box-header with-border">
               <h3 class="box-title">Purchases</h3>
               <div class="box-tools pull-right">
-                <button type="button" class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i>
+                <button
+                  type="button"
+                  class="btn btn-box-tool"
+                  data-widget="collapse">
+                    <i class="fa fa-minus"></i>
                 </button>
-                <button type="button" class="btn btn-box-tool" data-widget="remove"><i class="fa fa-times"></i></button>
+                <button
+                  type="button"
+                  class="btn btn-box-tool"
+                  data-widget="remove">
+                    <i class="fa fa-times"></i>
+                </button>
               </div>
             </div>
             <div class="box-body text-center float-center">
               <span class="float-center text-center">
                 <div class="dropdown">
                     <%= dropdown_button "dropdownMenu2", { text: "New Inventory", size: "lg" } %>
-                    <ul class="dropdown-menu float-center" style="text-align:center;margin-left: 190px;" aria-labelledby="dropdownMenu2">
+                    <ul class="dropdown-menu float-center"
+                      style="text-align:center;margin-left: 190px;"
+                      aria-labelledby="dropdownMenu2">
                      <li class="center-block">
                       <%= view_button_to purchases_path, { text: "All Purchases", type: '', size: "md" } %>
                     </li>
@@ -209,7 +221,14 @@
                     </ul>
                 </div>
               </span>
-              <h3 class="text-center"><%= total_purchased %> items received <%= display_interval %></h3>
+              <h3 class="text-center">
+                <%= total_purchased %> items purchased <%= display_interval %>
+              </h3>
+              <h3>
+                <%= item_value(@recent_purchases.sum(&:amount_spent_in_cents))%>
+                 spent 
+                <%= display_interval %>
+              </h3>
               <div class="box-body">
                 <h4>Recent purchases</h4>
                 <%= render partial: "purchase", collection: @recent_purchases, as: :purchase %>

@@ -21,6 +21,15 @@ RSpec.describe "Donations", type: :system, js: true do
     it "Displays Total quantity on the index page" do
       expect(page.find(:css, "table.table-hover", visible: true)).to have_content("20")
     end
+
+    # FIXME: We can remove this after unscoping items, I think.
+    it "doesn't die when an inactive item is in a donation" do
+      item = create(:item, :active, name: "INACTIVE ITEM")
+      create(:donation, :with_items, item: item)
+      item.update(active: false)
+      item.reload
+      visit @url_prefix + "/donations"
+    end
   end
 
   context "When filtering on the index page" do
@@ -143,9 +152,9 @@ RSpec.describe "Donations", type: :system, js: true do
         select Item.alphabetized.first.name, from: "donation_line_items_attributes_0_item_id"
         fill_in "donation_line_items_attributes_0_quantity", with: "5"
         page.find(:css, "#__add_line_item").click
-        select_id = page.find(:xpath, '//*[@id="donation_line_items"]/div[2]/select')[:id]
+        select_id = page.find(:xpath, '//*[@id="donation_line_items"]/section[2]//select')[:id]
         select Item.alphabetized.first.name, from: select_id
-        text_id = page.find(:xpath, '//*[@id="donation_line_items"]/div[2]/input[2]')[:id]
+        text_id = page.find(:css, '#donation_line_items > section:nth-child(2) > div > div.col-md-3.col-12 > div.donation_line_items_quantity > input')[:id]
         fill_in text_id, with: "10"
 
         expect do
@@ -153,6 +162,20 @@ RSpec.describe "Donations", type: :system, js: true do
         end.to change { Donation.count }.by(1)
 
         expect(Donation.last.line_items.first.quantity).to eq(15)
+      end
+
+      it "Does not include inactive items in the line item fields" do
+        item = Item.alphabetized.first
+
+        select StorageLocation.first.name, from: "donation_storage_location_id"
+        expect(page).to have_content(item.name)
+        select item.name, from: "donation_line_items_attributes_0_item_id"
+
+        item.update(active: false)
+
+        page.refresh
+        select StorageLocation.first.name, from: "donation_storage_location_id"
+        expect(page).to have_no_content(item.name)
       end
 
       it "Allows User to create a donation for a Diaper Drive source" do
@@ -285,6 +308,37 @@ RSpec.describe "Donations", type: :system, js: true do
         page.find(:css, "#__add_line_item").click
         expect(page).to have_xpath("//input[@id='_barcode-lookup-1']")
         expect(page).to have_xpath("//input[@id='_barcode-lookup-2']")
+      end
+
+      it "Verifies unusually large donation quantities", js: true do
+        select Donation::SOURCES[:misc], from: "donation_source"
+        select StorageLocation.first.name, from: "donation_storage_location_id"
+        select Item.alphabetized.first.name, from: "donation_line_items_attributes_0_item_id"
+        fill_in "donation_line_items_attributes_0_quantity", with: "1000000"
+
+        expect do
+          accept_confirm do
+            click_button "Save"
+          end
+          # wait for the next page to load
+          expect(page).not_to have_xpath("//select[@id='donation_line_items_attributes_0_item_id']")
+        end.to change { Donation.count }.by(1)
+      end
+
+      it "Displays nested errors" do
+        select Donation::SOURCES[:misc], from: "donation_source"
+        select StorageLocation.first.name, from: "donation_storage_location_id"
+        select Item.alphabetized.first.name, from: "donation_line_items_attributes_0_item_id"
+        fill_in "donation_line_items_attributes_0_quantity", with: "10000000000000000000000"
+
+        expect do
+          accept_confirm do
+            click_button "Save"
+          end
+          expect(page).to have_xpath("//select[@id='donation_line_items_attributes_0_item_id']")
+        end.not_to change { Donation.count }
+        expect(page).to have_content("Start a new donation")
+        expect(page).to have_content("must be less than")
       end
     end
 

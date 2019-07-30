@@ -105,7 +105,7 @@ class DonationsController < ApplicationController
     @donation_sites = current_organization.donation_sites.alphabetized
     @diaper_drive_participants = current_organization.diaper_drive_participants.alphabetized
     @manufacturers = current_organization.manufacturers.alphabetized
-    @items = current_organization.items.alphabetized
+    @items = current_organization.items.active.alphabetized
   end
 
   def donation_params
@@ -154,8 +154,8 @@ class DonationsController < ApplicationController
 
   def total_value(donations)
     total_value_all_donations = 0
-    donations.each do |distribution|
-      total_value_all_donations += distribution.value_per_itemizable
+    donations.each do |donation|
+      total_value_all_donations += donation.value_per_itemizable
     end
     total_value_all_donations
   end

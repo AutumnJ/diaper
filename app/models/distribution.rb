@@ -36,7 +36,13 @@ class Distribution < ApplicationRecord
 
   before_save :combine_distribution
 
+  include Filterable
+  # add item_id scope to allow filtering distributions by item
+  scope :by_item_id, ->(item_id) { joins(:items).where(items: { id: item_id }) }
+  # partner scope to allow filtering by partner
+  scope :by_partner, ->(partner_id) { where(partner_id: partner_id) }
   scope :recent, ->(count = 3) { order(issued_at: :desc).limit(count) }
+  scope :future, -> { where("issued_at >= :tomorrow", tomorrow: Time.zone.tomorrow) }
   scope :during, ->(range) { where(distributions: { issued_at: range }) }
   scope :for_csv_export, ->(organization) {
     where(organization: organization)
